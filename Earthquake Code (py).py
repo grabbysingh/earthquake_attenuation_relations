@@ -1,0 +1,547 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+
+
+# In[2]:
+
+
+import pandas as pd
+
+
+# In[3]:
+
+
+data=pd.read_excel("Last_Predicted_and_Observed_Outputs.xlsx")
+
+
+# In[4]:
+
+
+data
+
+
+# In[5]:
+
+
+data.drop(['Earthquake No. ','Inputs (Iran )'],axis=1,inplace=True)
+
+
+# In[6]:
+
+
+data.drop(['Unnamed: 2','Unnamed: 3','Unnamed: 4','Unnamed: 8'],axis=1,inplace=True)
+
+
+# In[7]:
+
+
+data.drop('Earthquake magnitude of Sharjah',axis=1,inplace=True)
+
+
+# In[8]:
+
+
+data.drop(['Unnamed: 16','Unnamed: 18'],axis=1,inplace=True)
+
+
+# In[9]:
+
+
+data.rename(columns = {'Unnamed: 5':'Effective duration (s) L', 'Unnamed: 6':'Effective duration (s) V', 
+                              'Unnamed: 7':'Effective duration (s) T'}, inplace = True)
+
+
+# In[10]:
+
+
+data.rename(columns = {'Predicted peak ground acceleration ':'Eq1','Unnamed: 11':'Eq2','Unnamed: 12':'Eq3', 'Unnamed: 13':'Eq4',
+                       'Unnamed: 14':'Eq5'}, inplace = True)
+
+
+# In[11]:
+
+
+data.rename(columns = {'Unnamed: 15':'Eq6','Unnamed: 17':'Eq7','Unnamed: 19':'Eq8', 'Unnamed: 20':'Eq9',
+                       'Unnamed: 21':'Eq10'}, inplace = True)
+
+
+# In[12]:
+
+
+data.rename(columns = {'Observed horizontal peak ground acceleration':'BHRC','Unnamed: 23':'UOSS'}, inplace = True)
+
+
+# In[13]:
+
+
+data.head()
+
+
+# In[14]:
+
+
+data.drop([0,1],inplace=True)
+
+
+# In[15]:
+
+
+data.head()
+
+
+# In[16]:
+
+
+data=data[pd.notnull(data['Effective duration (s) L'])]
+
+
+# In[17]:
+
+
+data.head()
+
+
+# In[18]:
+
+
+data.drop(['Effective duration (s) L','Effective duration (s) V','Effective duration (s) T'],axis=1,inplace=True)
+
+
+# In[19]:
+
+
+data.head()
+
+
+# In[20]:
+
+
+data=data[pd.notnull(data['Eq1'])]
+
+
+# In[21]:
+
+
+data
+
+
+# In[22]:
+
+
+data=data[pd.notnull(data['UOSS'])]
+
+
+# In[23]:
+
+
+data
+
+
+# In[24]:
+
+
+from sklearn.model_selection import train_test_split
+
+
+# In[25]:
+
+
+X=data.drop(['UOSS','BHRC'],axis=1)
+
+
+# In[26]:
+
+
+y=data['UOSS']
+y = y.astype(int)
+
+
+# In[27]:
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+
+
+# In[ ]:
+
+
+
+
+
+# In[28]:
+
+
+# RANDOM FOREST
+
+
+# In[29]:
+
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import GridSearchCV
+
+
+# In[30]:
+
+
+rfc = RandomForestRegressor()
+
+
+# In[31]:
+
+
+param_rfc = {'n_estimators': [50, 100, 200]}
+
+
+# In[32]:
+
+
+rfc_gs = GridSearchCV(rfc, param_rfc, cv=5)
+
+
+# In[33]:
+
+
+rfc_gs.fit(X_train,y_train)
+
+
+# In[34]:
+
+
+#rfc_pred = rfc.predict(X_test)
+
+
+# In[35]:
+
+
+rfc_best = rfc_gs.best_estimator_
+
+
+# In[36]:
+
+
+#mean_squared_error(y_test,rfc_pred)
+
+
+# In[37]:
+
+
+print(rfc_gs.best_params_)
+
+
+# In[38]:
+
+
+rfcbest = rfc_best.score(X_test, y_test)
+
+
+# In[39]:
+
+
+print(rfcbest)
+
+
+# In[40]:
+
+
+# K NEAREST NEIGHBOUR
+
+
+# In[41]:
+
+
+#import matplotlib.pyplot as plt
+#import seaborn as sns
+#%matplotlib inline
+
+
+# In[42]:
+
+
+data.head()
+
+
+# In[43]:
+
+
+from sklearn.preprocessing import StandardScaler
+
+
+# In[44]:
+
+
+scaler = StandardScaler()
+
+
+# In[45]:
+
+
+scaler.fit(data.drop(['UOSS','BHRC'],axis=1))
+
+
+# In[46]:
+
+
+scaled_features = scaler.transform(data.drop(['UOSS','BHRC'],axis=1))
+
+
+# In[47]:
+
+
+data_feat = pd.DataFrame(scaled_features,columns=data.columns[:-2])
+
+
+# In[48]:
+
+
+data_feat.head()
+
+
+# In[49]:
+
+
+#X1_train, X1_test, y1_train, y1_test = train_test_split(X, y, test_size=0.3)
+
+
+# In[50]:
+
+
+from sklearn.neighbors import KNeighborsRegressor
+
+
+# In[51]:
+
+
+#error_rate=[]
+#for i in range(1,38):
+ #   knn = KNeighborsRegressor(n_neighbors=i)
+  #  knn.fit(X_train,y_train)
+   # pred_i = knn.predict(X_test)
+    #error_rate.append(np.mean(pred_i!=y_test))
+#plt.figure(figsize=(10,6))
+#plt.plot(range(1,38),error_rate,color='blue',linestyle='dashed',marker='o',markerfacecolor='red',markersize=10)
+#plt.title('Error rate vs k value')
+#plt.xlabel('K')
+#plt.ylabel('Error Rate')
+
+
+# In[52]:
+
+
+knn = KNeighborsRegressor()
+
+
+# In[53]:
+
+
+param_knn = {'n_neighbors': np.arange(1, 25)}
+
+
+# In[54]:
+
+
+knn_gs = GridSearchCV(knn, param_knn, cv=5)
+
+
+# In[55]:
+
+
+knn_gs.fit(X_train,y_train)
+
+
+# In[56]:
+
+
+knn_best = knn_gs.best_estimator_
+
+
+# In[57]:
+
+
+#pred = knn.predict(X_test)
+
+
+# In[58]:
+
+
+print(knn_gs.best_params_)
+
+
+# In[59]:
+
+
+#mean_squared_error(y_test,pred)
+
+
+# In[60]:
+
+
+knnbest = knn_best.score(X_test, y_test)
+
+
+# In[61]:
+
+
+print(knnbest)
+
+
+# In[ ]:
+
+
+
+
+
+# In[62]:
+
+
+# LOGISTIC REGRESSION
+
+
+# In[63]:
+
+
+#X2_train, X2_test, y2_train, y2_test = train_test_split(X, y, test_size=0.3)
+
+
+# In[64]:
+
+
+from sklearn.linear_model import LogisticRegression
+
+
+# In[65]:
+
+
+logmodel = LogisticRegression()
+#y = y.astype('int')
+
+
+# In[66]:
+
+
+logmodel.fit(X_train,y_train)
+
+
+# In[67]:
+
+
+logmodelbest = logmodel.score(X_test, y_test)
+
+
+# In[68]:
+
+
+print(logmodelbest)
+
+
+# In[69]:
+
+
+#predictions = logmodel.predict(X_test)
+
+
+# In[70]:
+
+
+#from sklearn.metrics import classification_report
+
+
+# In[71]:
+
+
+#print(classification_report(y_test,predictions))
+
+
+# In[72]:
+
+
+#from sklearn.metrics import confusion_matrix
+
+
+# In[73]:
+
+
+#confusion_matrix(y_test,predictions)
+
+
+# In[74]:
+
+
+#mean_squared_error(y_test,predictions)
+
+
+# In[75]:
+
+
+#logreg_best = r2_score(y_test,predictions)
+
+
+# In[76]:
+
+
+#print(logreg_best)
+
+
+# In[ ]:
+
+
+
+
+
+# In[77]:
+
+
+#ENSEMBLE METHOD
+
+
+# In[78]:
+
+
+from sklearn.ensemble import VotingRegressor
+
+
+# In[79]:
+
+
+#estimators=[('knn', knnbest), ('rfc', rfcbest), ('logmodel', logmodelbest)]
+print('knn: {}'.format(knn_best.score(X_test, y_test)))
+print('rf: {}'.format(rfc_best.score(X_test, y_test)))
+print('log_reg: {}'.format(logmodel.score(X_test, y_test)))
+
+
+# In[80]:
+
+
+estimators=[('knn', knn_best), ('rf', rfc_best)]
+
+
+# In[81]:
+
+
+ensemble = VotingRegressor(estimators)
+
+
+# In[82]:
+
+
+ensemble.fit(X_train, y_train)
+
+
+# In[83]:
+
+
+ensemble.score(X_test, y_test)
+
+
+# In[ ]:
+
+
+
+
